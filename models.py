@@ -13,16 +13,15 @@ class Submission(db.Model):
         db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     image_count = db.Column(db.Integer, default=0)
-    images_base64 = db.Column(db.Text)  # JSON array of base64 strings
     analysis_result = db.Column(db.Text)  # Full JSON result
     product_name = db.Column(db.String(500))
     brand_name = db.Column(db.String(500))
     category = db.Column(db.String(500))
 
-    def to_dict(self, include_images=False):
+    def to_dict(self):
         import json
 
-        data = {
+        return {
             "id": self.id,
             "created_at": self.created_at.isoformat(),
             "image_count": self.image_count,
@@ -33,8 +32,3 @@ class Submission(db.Model):
             if self.analysis_result
             else None,
         }
-        if include_images:
-            data["images_base64"] = (
-                json.loads(self.images_base64) if self.images_base64 else []
-            )
-        return data

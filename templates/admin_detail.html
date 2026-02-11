@@ -56,16 +56,6 @@
     background: var(--accent); border-radius: 2px;
   }
 
-  /* Images */
-  .image-grid {
-    display: flex; gap: 1rem; flex-wrap: wrap;
-  }
-  .image-grid img {
-    max-width: 300px; max-height: 400px;
-    border-radius: 10px; border: 1px solid var(--border);
-    object-fit: contain; background: var(--surface);
-  }
-
   /* Metric cards */
   .metric-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .75rem;
@@ -150,16 +140,6 @@
     <div class="meta-tag"><div class="label">브랜드</div>{{ submission.brand_name or '-' }}</div>
     <div class="meta-tag"><div class="label">카테고리</div>{{ submission.category or '-' }}</div>
   </div>
-
-  <!-- Images -->
-  {% if images %}
-  <div class="section-title">업로드된 이미지</div>
-  <div class="image-grid">
-    {% for img_b64 in images %}
-    <img src="data:image/jpeg;base64,{{ img_b64 }}" alt="Image {{ loop.index }}">
-    {% endfor %}
-  </div>
-  {% endif %}
 
   {% if analysis %}
   <!-- Metrics -->

@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 from functools import wraps
@@ -81,21 +80,18 @@ def analyze():
     }
 
     image_list = []
-    images_b64 = []
     for f in files:
         ext = f.filename.rsplit(".", 1)[-1].lower()
         media_type = MEDIA_MAP.get(ext, "image/jpeg")
-        raw = f.read()
-        image_list.append((raw, media_type))
-        images_b64.append(base64.b64encode(raw).decode("utf-8"))
+        image_list.append((f.read(), media_type))
 
     try:
         result = analyze_page(image_list, api_key)
+        del image_list  # free memory
 
         # Save to DB
         submission = Submission(
             image_count=len(files),
-            images_base64=json.dumps(images_b64),
             analysis_result=json.dumps(result, ensure_ascii=False),
             product_name=result.get("product_name", ""),
             brand_name=result.get("brand_name", ""),
@@ -126,12 +122,11 @@ def admin_list():
 @require_admin
 def admin_detail(sub_id):
     submission = Submission.query.get_or_404(sub_id)
-    images = json.loads(submission.images_base64) if submission.images_base64 else []
     analysis = (
         json.loads(submission.analysis_result) if submission.analysis_result else {}
     )
     return render_template(
-        "admin_detail.html", submission=submission, images=images, analysis=analysis
+        "admin_detail.html", submission=submission, analysis=analysis
     )
 
 
@@ -139,7 +134,7 @@ def admin_detail(sub_id):
 @require_admin
 def admin_export():
     submissions = Submission.query.order_by(Submission.created_at.desc()).all()
-    data = [s.to_dict(include_images=False) for s in submissions]
+    data = [s.to_dict() for s in submissions]
     return Response(
         json.dumps(data, ensure_ascii=False, indent=2),
         mimetype="application/json",
@@ -151,7 +146,7 @@ def admin_export():
 @require_admin
 def admin_export_full():
     submissions = Submission.query.order_by(Submission.created_at.desc()).all()
-    data = [s.to_dict(include_images=True) for s in submissions]
+    data = [s.to_dict() for s in submissions]
     return Response(
         json.dumps(data, ensure_ascii=False, indent=2),
         mimetype="application/json",
