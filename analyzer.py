@@ -98,7 +98,7 @@ def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dic
 
     response = client.messages.create(
         model="claude-sonnet-4-5-20250929",
-        max_tokens=8192,
+        max_tokens=16384,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": content}],
     )
