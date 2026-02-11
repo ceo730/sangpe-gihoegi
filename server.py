@@ -19,7 +19,7 @@ from models import Submission, db
 load_dotenv()
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32MB
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB
 
 # ── Database ──
 database_url = os.getenv("DATABASE_URL", "sqlite:///local.db")
