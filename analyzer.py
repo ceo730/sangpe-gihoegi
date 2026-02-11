@@ -9,18 +9,18 @@ from PIL import Image
 
 from prompt import SYSTEM_PROMPT, USER_PROMPT
 
-MAX_TILE_BYTES = 500_000  # 타일당 500KB (메모리 절약)
-MAX_DIMENSION = 6000
-TILE_HEIGHT = 3000
-TILE_OVERLAP = 100
-TARGET_WIDTH = 800  # 폭 줄여서 메모리 절약
+MAX_TILE_BYTES = 800_000
+MAX_DIMENSION = 7900
+TILE_HEIGHT = 4000
+TILE_OVERLAP = 200
+TARGET_WIDTH = 1100
 
 
 def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
 
-    for quality in (75, 60, 45):
+    for quality in (90, 80, 70, 55):
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=quality)
         if buf.tell() <= max_bytes:
@@ -29,16 +29,16 @@ def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
     shrunk = img
     while True:
         shrunk = shrunk.resize(
-            (int(shrunk.width * 0.7), int(shrunk.height * 0.7)), Image.LANCZOS
+            (int(shrunk.width * 0.75), int(shrunk.height * 0.75)), Image.LANCZOS
         )
         buf = io.BytesIO()
-        shrunk.save(buf, format="JPEG", quality=50)
+        shrunk.save(buf, format="JPEG", quality=60)
         if buf.tell() <= max_bytes:
             return buf.getvalue()
 
 
 def _process_single_image(image_bytes: bytes) -> list[dict]:
-    """이미지 1장을 처리하여 API content 블록 리스트 반환. 메모리 즉시 해제."""
+    """이미지 1장 처리 → API content 블록 리스트. 메모리 즉시 해제."""
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode == "P":
         img = img.convert("RGBA")
@@ -47,7 +47,6 @@ def _process_single_image(image_bytes: bytes) -> list[dict]:
         ratio = TARGET_WIDTH / img.width
         img = img.resize((TARGET_WIDTH, int(img.height * ratio)), Image.LANCZOS)
 
-    # 타일 분할
     content_blocks = []
     if img.height <= MAX_DIMENSION:
         data = _save_jpeg(img)
@@ -92,7 +91,6 @@ def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dic
         blocks = _process_single_image(image_bytes)
         content.extend(blocks)
         del blocks
-        # 원본 바이트 참조 제거
         image_bytes_list[i] = (b"", "")
         gc.collect()
 
