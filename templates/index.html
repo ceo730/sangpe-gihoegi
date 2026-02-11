@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상페기획기 — 전환율 중심 상세페이지 분석</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e4e6ef;
+    --text-dim: #8b8fa3;
+    --accent: #6c63ff;
+    --accent-glow: rgba(108,99,255,.25);
+    --red: #ff6b6b;
+    --orange: #ffa94d;
+    --green: #51cf66;
+    --blue: #339af0;
+    --purple: #845ef7;
+    --teal: #20c997;
+    --pink: #f06595;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,.85);
+  }
+  .header h1 { font-size: 1.25rem; font-weight: 700; }
+  .header h1 span { color: var(--accent); }
+  .header .badge {
+    font-size: .7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .2rem .7rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Upload Area ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--surface);
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(108,99,255,.05);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .upload-zone input { display: none; }
+  .upload-zone .icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  .upload-zone p { color: var(--text-dim); font-size: .9rem; }
+  .upload-zone .hint { font-size: .8rem; color: var(--text-dim); margin-top: .5rem; opacity: .7; }
+
+  /* ── Preview ── */
+  .preview-grid {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+  .preview-item {
+    position: relative;
+    width: 120px; height: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-item .remove {
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(0,0,0,.7); color: #fff;
+    border: none; border-radius: 50%;
+    width: 22px; height: 22px; cursor: pointer;
+    font-size: .75rem; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Button ── */
+  .btn-analyze {
+    padding: .75rem 2rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 1.5rem;
+    width: 100%;
+  }
+  .btn-analyze:hover { box-shadow: 0 4px 20px var(--accent-glow); transform: translateY(-1px); }
+  .btn-analyze:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── Spinner ── */
+  .spinner-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 0;
+  }
+  .spinner-wrap.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-wrap p { color: var(--text-dim); font-size: .95rem; }
+
+  /* ── Error ── */
+  .error-box {
+    background: rgba(255,107,107,.1);
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    color: var(--red);
+    margin-top: 1.5rem;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* ── Results ── */
+  #results { display: none; margin-top: 2.5rem; }
+  #results.show { display: block; }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 2rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px; height: 1.1rem;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── Metric Cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: .75rem;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .metric-card .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
+  .metric-card .value { font-size: 1.05rem; font-weight: 600; }
+
+  /* ── Section Cards ── */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: .75rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .section-card .card-head {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .75rem;
+  }
+  .section-card .order-badge {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .section-card .role-name { font-weight: 700; font-size: 1rem; }
+  .section-card .detail { margin-top: .4rem; font-size: .88rem; color: var(--text-dim); }
+  .section-card .detail strong { color: var(--text); font-weight: 600; }
+
+  /* ── Structure Summary ── */
+  .summary-box {
+    background: linear-gradient(135deg, rgba(108,99,255,.1), rgba(51,154,240,.1));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    font-size: .95rem;
+    line-height: 1.7;
+  }
+
+  /* ── Strengths / Weaknesses ── */
+  .sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  @media (max-width: 700px) { .sw-grid { grid-template-columns: 1fr; } }
+  .sw-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .sw-box h4 { margin-bottom: .75rem; font-size: .95rem; }
+  .sw-box ul { list-style: none; }
+  .sw-box ul li {
+    padding: .4rem 0;
+    font-size: .9rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+  }
+  .sw-box ul li::before { flex-shrink: 0; margin-top: 2px; }
+  .sw-box.strengths ul li::before { content: '✅'; }
+  .sw-box.weaknesses ul li::before { content: '⚠️'; }
+
+  /* ── Improvements ── */
+  .improve-list { list-style: none; counter-reset: imp; }
+  .improve-list li {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .85rem 1.25rem;
+    margin-bottom: .5rem;
+    font-size: .9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+  }
+  .improve-list li::before {
+    counter-increment: imp;
+    content: counter(imp);
+    width: 26px; height: 26px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── Download ── */
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .65rem 1.5rem;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: all .2s;
+    text-decoration: none;
+    margin-top: 1rem;
+  }
+  .btn-download:hover { border-color: var(--accent); background: rgba(108,99,255,.1); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1><span>상페</span>기획기</h1>
+  <span class="badge">전환율 분석 엔진 v1.0</span>
+</div>
+
+<div class="container">
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <div class="icon">📄</div>
+    <p><strong>상세페이지 이미지를 드래그하거나 클릭하여 업로드</strong></p>
+    <p class="hint">JPG, PNG, WEBP 지원 · 복수 이미지 가능 · 위→아래 순서대로 업로드하세요</p>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" multiple>
+  </div>
+  <div class="preview-grid" id="previewGrid"></div>
+
+  <!-- Analyze Button -->
+  <button class="btn-analyze" id="btnAnalyze" disabled>분석 시작</button>
+
+  <!-- Spinner -->
+  <div class="spinner-wrap" id="spinner">
+    <div class="spinner"></div>
+    <p>Claude가 상세페이지를 분석 중입니다…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="section-title">기본 정보</div>
+    <div class="metric-grid" id="metricGrid"></div>
+
+    <div class="section-title">핵심 카피</div>
+    <div id="keyCopyWrap"></div>
+
+    <div class="section-title">섹션별 설득 구조</div>
+    <div id="sectionsWrap"></div>
+
+    <div class="section-title">전체 구조 요약</div>
+    <div class="summary-box" id="summaryBox"></div>
+
+    <div class="section-title">강점 / 약점</div>
+    <div class="sw-grid" id="swGrid"></div>
+
+    <div class="section-title">전환율 개선 포인트</div>
+    <ol class="improve-list" id="improveList"></ol>
+
+    <a class="btn-download" id="btnDownload" download="analysis_result.json" style="margin-top:1.5rem">⬇ JSON 원본 다운로드</a>
+  </div>
+
+</div>
+
+<script>
+const ROLE_COLORS = {
+  '감정공감': '#ff6b6b',
+  '문제제기': '#ffa94d',
+  '해결제시': '#51cf66',
+  '차별화': '#339af0',
+  '증거': '#845ef7',
+  '신뢰': '#20c997',
+  'CTA': '#f06595'
+};
+
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const previewGrid = document.getElementById('previewGrid');
+const btnAnalyze = document.getElementById('btnAnalyze');
+const spinner = document.getElementById('spinner');
+const errorBox = document.getElementById('errorBox');
+const results = document.getElementById('results');
+
+let selectedFiles = [];
+
+// ── Upload handling ──
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+function addFiles(fileList) {
+  for (const f of fileList) {
+    if (/\.(jpe?g|png|webp)$/i.test(f.name)) selectedFiles.push(f);
+  }
+  renderPreviews();
+}
+
+function renderPreviews() {
+  previewGrid.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    const btn = document.createElement('button');
+    btn.className = 'remove';
+    btn.textContent = '✕';
+    btn.onclick = () => { selectedFiles.splice(i, 1); renderPreviews(); };
+    div.append(img, btn);
+    previewGrid.appendChild(div);
+  });
+  btnAnalyze.disabled = selectedFiles.length === 0;
+}
+
+// ── Analyze ──
+btnAnalyze.addEventListener('click', async () => {
+  if (selectedFiles.length === 0) return;
+
+  errorBox.classList.remove('show');
+  results.classList.remove('show');
+  spinner.classList.add('show');
+  btnAnalyze.disabled = true;
+
+  const formData = new FormData();
+  selectedFiles.forEach(f => formData.append('images', f));
+
+  try {
+    const resp = await fetch('/analyze', { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '알 수 없는 오류');
+    renderResults(data);
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.classList.add('show');
+  } finally {
+    spinner.classList.remove('show');
+    btnAnalyze.disabled = false;
+  }
+});
+
+// ── Render Results ──
+function renderResults(data) {
+  // Metrics
+  const metricGrid = document.getElementById('metricGrid');
+  metricGrid.innerHTML = [
+    { label: '상품명', value: data.product_name },
+    { label: '브랜드', value: data.brand_name },
+    { label: '카테고리', value: data.category },
+    { label: '타겟 고객', value: data.estimated_target },
+    { label: '가격대', value: data.price_range },
+  ].map(m => `<div class="metric-card"><div class="label">${m.label}</div><div class="value">${m.value || '-'}</div></div>`).join('');
+
+  // Key Copy
+  const keyCopyWrap = document.getElementById('keyCopyWrap');
+  const copies = data.key_copy_text || [];
+  keyCopyWrap.innerHTML = copies.length
+    ? copies.map(c => `<div class="summary-box" style="margin-bottom:.5rem;font-style:italic">"${c}"</div>`).join('')
+    : '<div class="summary-box">-</div>';
+
+  // Sections
+  const sectionsWrap = document.getElementById('sectionsWrap');
+  sectionsWrap.innerHTML = (data.sections || []).map(sec => {
+    const color = ROLE_COLORS[sec.role] || '#868e96';
+    return `<div class="section-card" style="border-left:4px solid ${color}">
+      <div class="card-head">
+        <div class="order-badge" style="background:${color}">${sec.order}</div>
+        <div class="role-name" style="color:${color}">${sec.role}</div>
+      </div>
+      <div class="detail"><strong>시각 구성:</strong> ${sec.image_description || '-'}</div>
+      <div class="detail"><strong>카피 요약:</strong> ${sec.copy_summary || '-'}</div>
+      <div class="detail"><strong>설득 의도:</strong> ${sec.persuasion_intent || '-'}</div>
+      <div class="detail"><strong>심리 기법:</strong> ${sec.psychology_used || '-'}</div>
+    </div>`;
+  }).join('');
+
+  // Summary
+  document.getElementById('summaryBox').textContent = data.overall_structure || '-';
+
+  // Strengths / Weaknesses
+  const swGrid = document.getElementById('swGrid');
+  swGrid.innerHTML = `
+    <div class="sw-box strengths"><h4>✅ 강점</h4><ul>${(data.strengths || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
+    <div class="sw-box weaknesses"><h4>⚠️ 약점</h4><ul>${(data.weaknesses || []).map(w => `<li>${w}</li>`).join('')}</ul></div>
+  `;
+
+  // Improvements
+  const improveList = document.getElementById('improveList');
+  improveList.innerHTML = (data.conversion_improvement_points || []).map(p => `<li><span>${p}</span></li>`).join('');
+
+  // Download
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  document.getElementById('btnDownload').href = URL.createObjectURL(blob);
+
+  results.classList.add('show');
+}
+</script>
+</body>
+</html>
