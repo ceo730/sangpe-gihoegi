@@ -18,7 +18,7 @@ from models import Submission, db
 load_dotenv()
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB
+app.config["MAX_CONTENT_LENGTH"] = 30 * 1024 * 1024  # 30MB
 
 # ── Database ──
 database_url = os.getenv("DATABASE_URL", "sqlite:///local.db")
@@ -34,7 +34,7 @@ with app.app_context():
 
 @app.errorhandler(413)
 def request_entity_too_large(e):
-    return jsonify({"error": "파일이 너무 큽니다. 10MB 이하로 업로드해주세요."}), 413
+    return jsonify({"error": "파일이 너무 큽니다. 30MB 이하로 업로드해주세요."}), 413
 
 
 # ── Admin auth ──
