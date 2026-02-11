@@ -19,7 +19,7 @@ from models import Submission, db
 load_dotenv()
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB
 
 # ── Database ──
 database_url = os.getenv("DATABASE_URL", "sqlite:///local.db")
@@ -31,6 +31,11 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 with app.app_context():
     db.create_all()
+
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    return jsonify({"error": "파일이 너무 큽니다. 50MB 이하로 업로드해주세요."}), 413
 
 
 # ── Admin auth ──
