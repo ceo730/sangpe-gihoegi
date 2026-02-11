@@ -1,4 +1,5 @@
 import base64
+import gc
 import io
 import json
 import re
@@ -8,18 +9,18 @@ from PIL import Image
 
 from prompt import SYSTEM_PROMPT, USER_PROMPT
 
-MAX_TILE_BYTES = 800_000  # 타일당 800KB → 총 10타일이어도 ~10MB
-MAX_DIMENSION = 7900
-TILE_HEIGHT = 4000
-TILE_OVERLAP = 200
-TARGET_WIDTH = 1100  # 텍스트 가독 충분, 용량 대폭 절약
+MAX_TILE_BYTES = 500_000  # 타일당 500KB (메모리 절약)
+MAX_DIMENSION = 6000
+TILE_HEIGHT = 3000
+TILE_OVERLAP = 100
+TARGET_WIDTH = 800  # 폭 줄여서 메모리 절약
 
 
 def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
 
-    for quality in (90, 80, 70, 55):
+    for quality in (75, 60, 45):
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=quality)
         if buf.tell() <= max_bytes:
@@ -28,31 +29,16 @@ def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
     shrunk = img
     while True:
         shrunk = shrunk.resize(
-            (int(shrunk.width * 0.75), int(shrunk.height * 0.75)), Image.LANCZOS
+            (int(shrunk.width * 0.7), int(shrunk.height * 0.7)), Image.LANCZOS
         )
         buf = io.BytesIO()
-        shrunk.save(buf, format="JPEG", quality=60)
+        shrunk.save(buf, format="JPEG", quality=50)
         if buf.tell() <= max_bytes:
             return buf.getvalue()
 
 
-def _split_tall_image(img: Image.Image) -> list[Image.Image]:
-    if img.height <= MAX_DIMENSION:
-        return [img]
-
-    tiles = []
-    y = 0
-    while y < img.height:
-        bottom = min(y + TILE_HEIGHT, img.height)
-        tile = img.crop((0, y, img.width, bottom))
-        tiles.append(tile)
-        y = bottom - TILE_OVERLAP
-        if bottom == img.height:
-            break
-    return tiles
-
-
-def _process_image(image_bytes: bytes) -> list[tuple[bytes, str]]:
+def _process_single_image(image_bytes: bytes) -> list[dict]:
+    """이미지 1장을 처리하여 API content 블록 리스트 반환. 메모리 즉시 해제."""
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode == "P":
         img = img.convert("RGBA")
@@ -61,13 +47,40 @@ def _process_image(image_bytes: bytes) -> list[tuple[bytes, str]]:
         ratio = TARGET_WIDTH / img.width
         img = img.resize((TARGET_WIDTH, int(img.height * ratio)), Image.LANCZOS)
 
-    tiles = _split_tall_image(img)
+    # 타일 분할
+    content_blocks = []
+    if img.height <= MAX_DIMENSION:
+        data = _save_jpeg(img)
+        img.close()
+        b64 = base64.standard_b64encode(data).decode("utf-8")
+        del data
+        content_blocks.append({
+            "type": "image",
+            "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
+        })
+        del b64
+    else:
+        y = 0
+        while y < img.height:
+            bottom = min(y + TILE_HEIGHT, img.height)
+            tile = img.crop((0, y, img.width, bottom))
+            data = _save_jpeg(tile)
+            tile.close()
+            del tile
+            b64 = base64.standard_b64encode(data).decode("utf-8")
+            del data
+            content_blocks.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": "image/jpeg", "data": b64},
+            })
+            del b64
+            y = bottom - TILE_OVERLAP
+            if bottom == img.height:
+                break
+        img.close()
 
-    results = []
-    for tile in tiles:
-        data = _save_jpeg(tile)
-        results.append((data, "image/jpeg"))
-    return results
+    gc.collect()
+    return content_blocks
 
 
 def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dict:
@@ -75,20 +88,13 @@ def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dic
     client = anthropic.Anthropic(api_key=api_key)
 
     content = []
-    for image_bytes, _media_type in image_bytes_list:
-        processed = _process_image(image_bytes)
-        for data, media_type in processed:
-            image_b64 = base64.standard_b64encode(data).decode("utf-8")
-            content.append(
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": media_type,
-                        "data": image_b64,
-                    },
-                }
-            )
+    for i, (image_bytes, _media_type) in enumerate(image_bytes_list):
+        blocks = _process_single_image(image_bytes)
+        content.extend(blocks)
+        del blocks
+        # 원본 바이트 참조 제거
+        image_bytes_list[i] = (b"", "")
+        gc.collect()
 
     content.append({"type": "text", "text": USER_PROMPT})
 
@@ -100,6 +106,9 @@ def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dic
     )
 
     raw_text = response.content[0].text
+    del content, response
+    gc.collect()
+
     return _extract_json(raw_text)
 
 
