@@ -94,13 +94,16 @@ def _call_api_with_retry(client, content: list) -> str:
     last_error = None
     for attempt in range(1 + MAX_RETRIES):
         try:
-            response = client.messages.create(
+            result_text = ""
+            with client.messages.stream(
                 model="claude-sonnet-4-5-20250929",
                 max_tokens=32000,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": content}],
-            )
-            return response.content[0].text
+            ) as stream:
+                for text in stream.text_stream:
+                    result_text += text
+            return result_text
         except anthropic.APIStatusError as e:
             last_error = e
             if e.status_code >= 500 and attempt < MAX_RETRIES:
