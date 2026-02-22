@@ -11,11 +11,11 @@ from PIL import Image
 
 from prompt import SYSTEM_PROMPT, USER_PROMPT
 
-MAX_TILE_BYTES = 800_000
+MAX_TILE_BYTES = 1_500_000
 MAX_DIMENSION = 7900
 TILE_HEIGHT = 4000
-TILE_OVERLAP = 200
-TARGET_WIDTH = 1100
+TILE_OVERLAP = 300
+TARGET_WIDTH = 1400
 
 MAX_RETRIES = 2
 RETRY_DELAY = 3  # seconds
@@ -27,7 +27,7 @@ def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
 
-    for quality in (90, 80, 70, 55):
+    for quality in (95, 88, 80, 70):
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=quality)
         if buf.tell() <= max_bytes:
