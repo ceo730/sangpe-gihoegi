@@ -1,7 +1,11 @@
+import io
 import json
 import os
+import time
+import uuid as uuid_mod
 from functools import wraps
 
+import requests as req
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -10,11 +14,23 @@ from flask import (
     jsonify,
     render_template,
     request,
+    send_file,
 )
 
 from analyzer import analyze_page
 from draft_generator import generate_draft_svg
 from models import Submission, db
+
+# ── Temp image store for Codia API ──
+_temp_images = {}  # {uuid_str: {"data": bytes, "media_type": str, "created": float}}
+
+
+def _cleanup_temp_images():
+    """5분 이상 된 임시 이미지 삭제."""
+    now = time.time()
+    expired = [k for k, v in _temp_images.items() if now - v["created"] > 300]
+    for k in expired:
+        del _temp_images[k]
 
 load_dotenv()
 
@@ -135,6 +151,60 @@ def generate_draft():
     except Exception as e:
         app.logger.error(f"초안 생성 오류: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# ── Figma Export (Codia API) ──
+@app.route("/export-figma", methods=["POST"])
+def export_figma():
+    codia_key = os.getenv("CODIA_API_KEY", "")
+    if not codia_key:
+        return jsonify({"error": "CODIA_API_KEY가 설정되지 않았습니다."}), 500
+
+    files = request.files.getlist("images")
+    if not files:
+        return jsonify({"error": "이미지를 업로드해주세요."}), 400
+
+    _cleanup_temp_images()
+
+    results = []
+    for f in files:
+        img_id = str(uuid_mod.uuid4())
+        _temp_images[img_id] = {
+            "data": f.read(),
+            "media_type": f.content_type or "image/jpeg",
+            "created": time.time(),
+        }
+        image_url = f"{request.host_url}temp-image/{img_id}"
+
+        try:
+            resp = req.post(
+                "https://api.codia.ai/v1/open/image_to_design",
+                headers={
+                    "Authorization": f"Bearer {codia_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"image_url": image_url},
+                timeout=120,
+            )
+            resp.raise_for_status()
+            results.append({"status": "ok", "data": resp.json()})
+        except req.RequestException as e:
+            results.append({"status": "error", "error": str(e)})
+
+    _cleanup_temp_images()
+    return jsonify({"results": results})
+
+
+@app.route("/temp-image/<image_id>")
+def temp_image(image_id):
+    entry = _temp_images.get(image_id)
+    if not entry:
+        abort(404, "이미지를 찾을 수 없습니다.")
+    data = entry["data"]
+    media_type = entry["media_type"]
+    # 한 번 서빙 후 삭제
+    del _temp_images[image_id]
+    return send_file(io.BytesIO(data), mimetype=media_type)
 
 
 # ── Admin routes ──
