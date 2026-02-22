@@ -13,6 +13,7 @@ from flask import (
 )
 
 from analyzer import analyze_page
+from draft_generator import generate_draft_svg
 from models import Submission, db
 
 load_dotenv()
@@ -89,6 +90,14 @@ def analyze():
         result = analyze_page(image_list, api_key)
         del image_list  # free memory
 
+        # Extract overall_score
+        score = result.get("overall_score")
+        if score is None and "scores" in result:
+            scores = result["scores"]
+            vals = [v for v in scores.values() if isinstance(v, (int, float))]
+            if vals:
+                score = round(sum(vals) / len(vals))
+
         # Save to DB
         submission = Submission(
             image_count=len(files),
@@ -96,6 +105,7 @@ def analyze():
             product_name=result.get("product_name", ""),
             brand_name=result.get("brand_name", ""),
             category=result.get("category", ""),
+            overall_score=score,
         )
         db.session.add(submission)
         db.session.commit()
@@ -103,6 +113,27 @@ def analyze():
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"분석 오류: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/generate-draft", methods=["POST"])
+def generate_draft():
+    """recommended_structure 데이터를 받아 SVG 와이어프레임을 생성."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON 데이터가 필요합니다."}), 400
+
+    recommended = data.get("recommended_structure")
+    if not recommended:
+        return jsonify({"error": "recommended_structure 데이터가 필요합니다."}), 400
+
+    product_name = data.get("product_name", "상세페이지")
+
+    try:
+        svg_content = generate_draft_svg(recommended, product_name)
+        return jsonify({"svg": svg_content})
+    except Exception as e:
+        app.logger.error(f"초안 생성 오류: {e}")
         return jsonify({"error": str(e)}), 500
 
 

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>상페기획기 — 전환율 중심 상세페이지 분석</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
   :root {
     --bg: #0f1117;
@@ -117,15 +119,15 @@
   .btn-analyze:hover { box-shadow: 0 4px 20px var(--accent-glow); transform: translateY(-1px); }
   .btn-analyze:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
 
-  /* ── Spinner ── */
-  .spinner-wrap {
+  /* ── Multi-step Loading ── */
+  .loading-wrap {
     display: none;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     padding: 3rem 0;
   }
-  .spinner-wrap.show { display: flex; }
+  .loading-wrap.show { display: flex; }
   .spinner {
     width: 48px; height: 48px;
     border: 4px solid var(--border);
@@ -134,7 +136,37 @@
     animation: spin .8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner-wrap p { color: var(--text-dim); font-size: .95rem; }
+
+  .loading-steps {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .8rem;
+    border-radius: 8px;
+    font-size: .8rem;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: all .3s;
+  }
+  .loading-step.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(108,99,255,.08);
+  }
+  .loading-step.done {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(81,207,102,.08);
+  }
+  .loading-step .step-icon { font-size: .9rem; }
+  .loading-msg { color: var(--text-dim); font-size: .9rem; }
 
   /* ── Error ── */
   .error-box {
@@ -167,10 +199,82 @@
     border-radius: 2px;
   }
 
+  /* ── Score Dashboard ── */
+  .score-dashboard {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .score-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+  }
+  .score-gauge svg { width: 140px; height: 140px; }
+  .score-gauge .grade-label {
+    font-size: 1rem;
+    font-weight: 700;
+    padding: .2rem .8rem;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .score-bars {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    justify-content: center;
+  }
+  .score-bar-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .score-bar-label {
+    width: 60px;
+    font-size: .8rem;
+    color: var(--text-dim);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .score-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--surface2);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    width: 0;
+    transition: width 1s ease-out;
+  }
+  .score-bar-value {
+    width: 36px;
+    font-size: .8rem;
+    font-weight: 700;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .score-dashboard { grid-template-columns: 1fr; }
+    .score-gauge { margin-bottom: .5rem; }
+  }
+
   /* ── Metric Cards ── */
   .metric-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: .75rem;
   }
   .metric-card {
@@ -181,6 +285,44 @@
   }
   .metric-card .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
   .metric-card .value { font-size: 1.05rem; font-weight: 600; }
+
+  /* ── Framework Analysis ── */
+  .framework-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+  }
+  @media (max-width: 768px) { .framework-grid { grid-template-columns: 1fr; } }
+  .framework-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .framework-card h4 {
+    font-size: .95rem;
+    font-weight: 700;
+    margin-bottom: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .framework-item {
+    display: flex;
+    gap: .5rem;
+    padding: .35rem 0;
+    font-size: .85rem;
+    color: var(--text-dim);
+    border-bottom: 1px solid rgba(46,51,69,.5);
+  }
+  .framework-item:last-child { border-bottom: none; }
+  .framework-item .fw-stage {
+    width: 70px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    font-size: .8rem;
+  }
 
   /* ── Section Cards ── */
   .section-card {
@@ -203,6 +345,7 @@
     align-items: center;
     gap: .6rem;
     margin-bottom: .75rem;
+    flex-wrap: wrap;
   }
   .section-card .order-badge {
     width: 28px; height: 28px;
@@ -213,8 +356,34 @@
     flex-shrink: 0;
   }
   .section-card .role-name { font-weight: 700; font-size: 1rem; }
+  .section-card .stage-tag {
+    font-size: .65rem;
+    padding: .15rem .5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    background: rgba(108,99,255,.12);
+    color: var(--accent);
+  }
+  .section-card .score-badge {
+    margin-left: auto;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: .15rem .5rem;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
   .section-card .detail { margin-top: .4rem; font-size: .88rem; color: var(--text-dim); }
   .section-card .detail strong { color: var(--text); font-weight: 600; }
+  .section-card .improvement-tip {
+    margin-top: .6rem;
+    padding: .5rem .75rem;
+    background: rgba(108,99,255,.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: .82rem;
+    color: var(--accent);
+  }
 
   /* ── Structure Summary ── */
   .summary-box {
@@ -226,7 +395,7 @@
     line-height: 1.7;
   }
 
-  /* ── Strengths / Weaknesses ── */
+  /* ── Structured Strengths / Weaknesses ── */
   .sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
   @media (max-width: 700px) { .sw-grid { grid-template-columns: 1fr; } }
   .sw-box {
@@ -236,42 +405,232 @@
     padding: 1.25rem;
   }
   .sw-box h4 { margin-bottom: .75rem; font-size: .95rem; }
-  .sw-box ul { list-style: none; }
-  .sw-box ul li {
-    padding: .4rem 0;
-    font-size: .9rem;
-    color: var(--text-dim);
-    display: flex;
-    align-items: flex-start;
-    gap: .5rem;
+  .sw-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .75rem;
+    margin-bottom: .5rem;
+    cursor: pointer;
+    transition: all .2s;
   }
-  .sw-box ul li::before { flex-shrink: 0; margin-top: 2px; }
-  .sw-box.strengths ul li::before { content: '✅'; }
-  .sw-box.weaknesses ul li::before { content: '⚠️'; }
+  .sw-item:hover { border-color: rgba(108,99,255,.3); }
+  .sw-item .sw-title {
+    font-size: .88rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .sw-item .sw-detail {
+    font-size: .82rem;
+    color: var(--text-dim);
+    margin-top: .35rem;
+    display: none;
+  }
+  .sw-item.open .sw-detail { display: block; }
+  .sw-item .sw-impact {
+    font-size: .78rem;
+    color: var(--orange);
+    margin-top: .25rem;
+    display: none;
+  }
+  .sw-item.open .sw-impact { display: block; }
+  .sw-item .sw-toggle {
+    margin-left: auto;
+    font-size: .7rem;
+    color: var(--text-dim);
+    transition: transform .2s;
+  }
+  .sw-item.open .sw-toggle { transform: rotate(180deg); }
 
-  /* ── Improvements ── */
-  .improve-list { list-style: none; counter-reset: imp; }
-  .improve-list li {
+  /* ── Priority Improvements ── */
+  .improve-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: .6rem;
+    border-left: 4px solid var(--border);
+  }
+  .improve-card.priority-high { border-left-color: var(--red); }
+  .improve-card.priority-mid { border-left-color: var(--orange); }
+  .improve-card.priority-low { border-left-color: var(--blue); }
+  .improve-head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .5rem;
+    flex-wrap: wrap;
+  }
+  .priority-badge {
+    font-size: .65rem;
+    padding: .15rem .5rem;
+    border-radius: 4px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .priority-badge.high { background: var(--red); }
+  .priority-badge.mid { background: var(--orange); }
+  .priority-badge.low { background: var(--blue); }
+  .category-badge {
+    font-size: .65rem;
+    padding: .15rem .5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .improve-title { font-weight: 700; font-size: .95rem; }
+  .improve-body { font-size: .85rem; color: var(--text-dim); margin-top: .25rem; }
+  .improve-body .label { color: var(--text); font-weight: 600; }
+  .improve-effect {
+    margin-top: .4rem;
+    padding: .35rem .6rem;
+    background: rgba(81,207,102,.08);
+    border-radius: 6px;
+    font-size: .8rem;
+    color: var(--green);
+  }
+
+  /* ── Recommended Structure Timeline ── */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    padding: .75rem 0 .75rem 20px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -22px; top: 1.1rem;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+  }
+  .timeline-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: .85rem 1.25rem;
-    margin-bottom: .5rem;
-    font-size: .9rem;
-    display: flex;
-    align-items: flex-start;
-    gap: .75rem;
+    padding: 1rem 1.25rem;
   }
-  .improve-list li::before {
-    counter-increment: imp;
-    content: counter(imp);
-    width: 26px; height: 26px;
+  .timeline-card .tl-head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .4rem;
+    flex-wrap: wrap;
+  }
+  .timeline-card .tl-order {
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .timeline-card .tl-name {
+    font-weight: 700;
+    font-size: .95rem;
+  }
+  .timeline-card .tl-role-tag {
+    font-size: .65rem;
+    padding: .1rem .4rem;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .timeline-card .tl-body {
+    font-size: .82rem;
+    color: var(--text-dim);
+    margin-top: .25rem;
+  }
+  .timeline-card .tl-copy {
+    font-style: italic;
+    color: var(--text);
+    margin-top: .3rem;
+    font-size: .85rem;
+    padding: .3rem .5rem;
+    background: rgba(108,99,255,.05);
+    border-radius: 4px;
+  }
+
+  /* ── Draft Section ── */
+  .draft-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+  .btn-draft {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .65rem 1.5rem;
     background: var(--accent);
     color: #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: .75rem; font-weight: 700;
-    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-draft:hover { box-shadow: 0 4px 20px var(--accent-glow); transform: translateY(-1px); }
+  .btn-draft:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .draft-preview {
+    margin-top: 1rem;
+    display: none;
+    text-align: center;
+  }
+  .draft-preview.show { display: block; }
+  .draft-preview svg,
+  .draft-preview img {
+    max-width: 375px;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+  }
+  .draft-actions {
+    display: flex;
+    gap: .5rem;
+    margin-top: .75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-download-svg {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1.2rem;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: .85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .btn-download-svg:hover { border-color: var(--accent); background: rgba(108,99,255,.1); }
+  .draft-guide {
+    margin-top: .75rem;
+    padding: .6rem .8rem;
+    background: rgba(108,99,255,.06);
+    border-radius: 8px;
+    font-size: .78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
   }
 
   /* ── Download ── */
@@ -291,6 +650,31 @@
     margin-top: 1rem;
   }
   .btn-download:hover { border-color: var(--accent); background: rgba(108,99,255,.1); }
+
+  /* ── Animations ── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim-card {
+    opacity: 0;
+    animation: fadeSlideUp .5s ease forwards;
+  }
+
+  /* ── Mobile Responsive ── */
+  @media (max-width: 768px) {
+    .container { padding: 1.5rem 1rem; }
+    .header { padding: 1rem 1.25rem; }
+    .upload-zone { padding: 2rem 1.25rem; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .header h1 { font-size: 1.1rem; }
+    .metric-grid { grid-template-columns: 1fr; }
+    .preview-item { width: 90px; height: 90px; }
+    .score-dashboard { padding: 1rem; gap: 1rem; }
+    .improve-head { flex-direction: column; align-items: flex-start; gap: .3rem; }
+  }
 </style>
 </head>
 <body>
@@ -298,7 +682,7 @@
 <!-- Header -->
 <div class="header">
   <h1><span>상페</span>기획기</h1>
-  <span class="badge">전환율 분석 엔진 v1.0</span>
+  <span class="badge">전환율 분석 엔진 v2.0</span>
 </div>
 
 <div class="container">
@@ -315,10 +699,16 @@
   <!-- Analyze Button -->
   <button class="btn-analyze" id="btnAnalyze" disabled>분석 시작</button>
 
-  <!-- Spinner -->
-  <div class="spinner-wrap" id="spinner">
+  <!-- Multi-step Loading -->
+  <div class="loading-wrap" id="loadingWrap">
     <div class="spinner"></div>
-    <p>Claude가 상세페이지를 분석 중입니다…</p>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1"><span class="step-icon">○</span> 이미지 업로드</div>
+      <div class="loading-step" id="step2"><span class="step-icon">○</span> 텍스트 분석</div>
+      <div class="loading-step" id="step3"><span class="step-icon">○</span> 구조 분석</div>
+      <div class="loading-step" id="step4"><span class="step-icon">○</span> 개선안 생성</div>
+    </div>
+    <p class="loading-msg" id="loadingMsg">Claude가 상세페이지를 분석 중입니다…</p>
   </div>
 
   <!-- Error -->
@@ -326,25 +716,62 @@
 
   <!-- Results -->
   <div id="results">
+
+    <!-- Score Dashboard -->
+    <div class="section-title">종합 점수</div>
+    <div class="score-dashboard anim-card" id="scoreDashboard">
+      <div class="score-gauge" id="scoreGauge"></div>
+      <div class="score-bars" id="scoreBars"></div>
+    </div>
+
+    <!-- Basic Info -->
     <div class="section-title">기본 정보</div>
     <div class="metric-grid" id="metricGrid"></div>
 
+    <!-- Key Copy -->
     <div class="section-title">핵심 카피</div>
     <div id="keyCopyWrap"></div>
 
+    <!-- Framework Analysis -->
+    <div class="section-title">설득 프레임워크 분석</div>
+    <div class="framework-grid" id="frameworkGrid"></div>
+
+    <!-- Sections -->
     <div class="section-title">섹션별 설득 구조</div>
     <div id="sectionsWrap"></div>
 
+    <!-- Structure Summary -->
     <div class="section-title">전체 구조 요약</div>
     <div class="summary-box" id="summaryBox"></div>
 
+    <!-- Strengths / Weaknesses -->
     <div class="section-title">강점 / 약점</div>
     <div class="sw-grid" id="swGrid"></div>
 
+    <!-- Improvements -->
     <div class="section-title">전환율 개선 포인트</div>
-    <ol class="improve-list" id="improveList"></ol>
+    <div id="improveWrap"></div>
 
-    <a class="btn-download" id="btnDownload" download="analysis_result.json" style="margin-top:1.5rem">⬇ JSON 원본 다운로드</a>
+    <!-- Recommended Structure -->
+    <div class="section-title">권장 상세페이지 구조</div>
+    <div class="timeline" id="timelineWrap"></div>
+
+    <!-- Draft Generation -->
+    <div class="section-title">피그마용 초안</div>
+    <div class="draft-section" id="draftSection">
+      <button class="btn-draft" id="btnDraft">초안 생성 (SVG 와이어프레임)</button>
+      <div class="draft-preview" id="draftPreview"></div>
+      <div class="draft-actions" id="draftActions" style="display:none">
+        <a class="btn-download-svg" id="btnDownloadSvg" download="wireframe.svg">SVG 다운로드 (Figma용)</a>
+      </div>
+      <div class="draft-guide" id="draftGuide" style="display:none">
+        Figma에서 사용하기: File > Place Image로 다운로드한 SVG를 가져오면 편집 가능한 레이어로 변환됩니다.
+        각 섹션별 색상 코드가 적용되어 있어 역할을 한눈에 파악할 수 있습니다.
+      </div>
+    </div>
+
+    <!-- JSON Download -->
+    <a class="btn-download" id="btnDownload" download="analysis_result.json" style="margin-top:1.5rem">JSON 원본 다운로드</a>
   </div>
 
 </div>
@@ -360,15 +787,34 @@ const ROLE_COLORS = {
   'CTA': '#f06595'
 };
 
+const SCORE_COLORS = {
+  visual: '#845ef7',
+  copy: '#339af0',
+  structure: '#51cf66',
+  trust: '#20c997',
+  mobile: '#ffa94d',
+  conversion: '#f06595'
+};
+
+const SCORE_LABELS = {
+  visual: '시각',
+  copy: '카피',
+  structure: '구조',
+  trust: '신뢰',
+  mobile: '모바일',
+  conversion: '전환'
+};
+
 const uploadZone = document.getElementById('uploadZone');
 const fileInput = document.getElementById('fileInput');
 const previewGrid = document.getElementById('previewGrid');
 const btnAnalyze = document.getElementById('btnAnalyze');
-const spinner = document.getElementById('spinner');
+const loadingWrap = document.getElementById('loadingWrap');
 const errorBox = document.getElementById('errorBox');
 const results = document.getElementById('results');
 
 let selectedFiles = [];
+let lastAnalysisData = null;
 
 // ── Upload handling ──
 uploadZone.addEventListener('click', () => fileInput.click());
@@ -397,7 +843,7 @@ function renderPreviews() {
     img.src = URL.createObjectURL(f);
     const btn = document.createElement('button');
     btn.className = 'remove';
-    btn.textContent = '✕';
+    btn.textContent = '\u2715';
     btn.onclick = () => { selectedFiles.splice(i, 1); renderPreviews(); };
     div.append(img, btn);
     previewGrid.appendChild(div);
@@ -429,14 +875,39 @@ function resizeImage(file) {
   });
 }
 
+// ── Loading Steps ──
+function setLoadingStep(step) {
+  const msgs = [
+    '이미지를 업로드하고 있습니다…',
+    'Claude가 텍스트를 분석 중입니다…',
+    '설득 구조를 분석하고 있습니다…',
+    '개선안을 생성 중입니다…'
+  ];
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < step) {
+      el.classList.add('done');
+      el.querySelector('.step-icon').textContent = '\u2713';
+    } else if (i === step) {
+      el.classList.add('active');
+      el.querySelector('.step-icon').textContent = '\u25CF';
+    } else {
+      el.querySelector('.step-icon').textContent = '\u25CB';
+    }
+  }
+  document.getElementById('loadingMsg').textContent = msgs[step - 1] || '';
+}
+
 // ── Analyze ──
 btnAnalyze.addEventListener('click', async () => {
   if (selectedFiles.length === 0) return;
 
   errorBox.classList.remove('show');
   results.classList.remove('show');
-  spinner.classList.add('show');
+  loadingWrap.classList.add('show');
   btnAnalyze.disabled = true;
+  setLoadingStep(1);
 
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.length; i++) {
@@ -444,22 +915,102 @@ btnAnalyze.addEventListener('click', async () => {
     formData.append('images', blob, selectedFiles[i].name.replace(/\.\w+$/, '.jpg'));
   }
 
+  setLoadingStep(2);
+
+  // Simulate step progression during API call
+  const stepTimer2 = setTimeout(() => setLoadingStep(3), 15000);
+  const stepTimer3 = setTimeout(() => setLoadingStep(4), 35000);
+
   try {
     const resp = await fetch('/analyze', { method: 'POST', body: formData });
+    clearTimeout(stepTimer2);
+    clearTimeout(stepTimer3);
+    setLoadingStep(4);
+
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || '알 수 없는 오류');
+
+    lastAnalysisData = data;
     renderResults(data);
+
+    // Smooth scroll to results
+    setTimeout(() => {
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
   } catch (err) {
     errorBox.textContent = err.message;
     errorBox.classList.add('show');
   } finally {
-    spinner.classList.remove('show');
+    loadingWrap.classList.remove('show');
     btnAnalyze.disabled = false;
   }
 });
 
+// ── Score Gauge SVG ──
+function createGaugeSVG(score, grade) {
+  const pct = Math.min(score, 100) / 100;
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const dashLen = circ * 0.75; // 270 degree arc
+  const filled = dashLen * pct;
+  let color = '#51cf66';
+  if (score < 40) color = '#ff6b6b';
+  else if (score < 60) color = '#ffa94d';
+  else if (score < 80) color = '#339af0';
+
+  return `
+    <svg viewBox="0 0 130 130">
+      <circle cx="65" cy="65" r="${r}" fill="none" stroke="var(--surface2)" stroke-width="10"
+              stroke-dasharray="${dashLen} ${circ}" stroke-dashoffset="0"
+              transform="rotate(135 65 65)" stroke-linecap="round"/>
+      <circle cx="65" cy="65" r="${r}" fill="none" stroke="${color}" stroke-width="10"
+              stroke-dasharray="${filled} ${circ}" stroke-dashoffset="0"
+              transform="rotate(135 65 65)" stroke-linecap="round"
+              class="gauge-fill"/>
+      <text x="65" y="62" text-anchor="middle" fill="var(--text)"
+            font-size="28" font-weight="800" font-family="Pretendard,sans-serif">${score}</text>
+      <text x="65" y="80" text-anchor="middle" fill="var(--text-dim)"
+            font-size="11" font-family="Pretendard,sans-serif">/ 100</text>
+    </svg>
+  `;
+}
+
 // ── Render Results ──
 function renderResults(data) {
+  // Animation delay counter
+  let delay = 0;
+
+  // Score Dashboard
+  const scores = data.scores || {};
+  const overallScore = data.overall_score || 0;
+  const grade = data.grade || '-';
+
+  const gaugeEl = document.getElementById('scoreGauge');
+  gaugeEl.innerHTML = createGaugeSVG(overallScore, grade) +
+    `<div class="grade-label">${grade}</div>`;
+
+  const barsEl = document.getElementById('scoreBars');
+  barsEl.innerHTML = Object.entries(SCORE_LABELS).map(([key, label]) => {
+    const val = scores[key] || 0;
+    const color = SCORE_COLORS[key];
+    return `
+      <div class="score-bar-item">
+        <div class="score-bar-label">${label}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" data-width="${val}" style="background:${color}"></div>
+        </div>
+        <div class="score-bar-value" style="color:${color}">${val}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Animate score bars
+  setTimeout(() => {
+    document.querySelectorAll('.score-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.width + '%';
+    });
+  }, 300);
+
   // Metrics
   const metricGrid = document.getElementById('metricGrid');
   metricGrid.innerHTML = [
@@ -468,28 +1019,71 @@ function renderResults(data) {
     { label: '카테고리', value: data.category },
     { label: '타겟 고객', value: data.estimated_target },
     { label: '가격대', value: data.price_range },
-  ].map(m => `<div class="metric-card"><div class="label">${m.label}</div><div class="value">${m.value || '-'}</div></div>`).join('');
+  ].map((m, i) => `<div class="metric-card anim-card" style="animation-delay:${i*0.05}s">
+    <div class="label">${m.label}</div><div class="value">${m.value || '-'}</div>
+  </div>`).join('');
 
   // Key Copy
   const keyCopyWrap = document.getElementById('keyCopyWrap');
   const copies = data.key_copy_text || [];
   keyCopyWrap.innerHTML = copies.length
-    ? copies.map(c => `<div class="summary-box" style="margin-bottom:.5rem;font-style:italic">"${c}"</div>`).join('')
+    ? copies.map(c => `<div class="summary-box" style="margin-bottom:.5rem;font-style:italic">"${escapeHtml(c)}"</div>`).join('')
     : '<div class="summary-box">-</div>';
+
+  // Framework Analysis
+  const fwGrid = document.getElementById('frameworkGrid');
+  const fw = data.framework_analysis;
+  if (fw) {
+    let aidmaHtml = '';
+    if (fw.aidma) {
+      const stages = {Attention:'주의', Interest:'관심', Desire:'욕구', Memory:'기억', Action:'행동'};
+      aidmaHtml = `<div class="framework-card anim-card">
+        <h4>AIDMA 분석</h4>
+        ${Object.entries(stages).map(([k,v]) => `
+          <div class="framework-item">
+            <div class="fw-stage">${v}</div>
+            <div>${escapeHtml(fw.aidma[k.toLowerCase()] || '-')}</div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+    let pasonaHtml = '';
+    if (fw.pasona) {
+      const stages = {Problem:'문제', Affinity:'공감', Solution:'해결', Offer:'제안', Narrowing:'한정', Action:'행동'};
+      pasonaHtml = `<div class="framework-card anim-card">
+        <h4>PASONA 분석</h4>
+        ${Object.entries(stages).map(([k,v]) => `
+          <div class="framework-item">
+            <div class="fw-stage">${v}</div>
+            <div>${escapeHtml(fw.pasona[k.toLowerCase()] || '-')}</div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+    fwGrid.innerHTML = aidmaHtml + pasonaHtml;
+  } else {
+    fwGrid.innerHTML = '';
+  }
 
   // Sections
   const sectionsWrap = document.getElementById('sectionsWrap');
-  sectionsWrap.innerHTML = (data.sections || []).map(sec => {
+  sectionsWrap.innerHTML = (data.sections || []).map((sec, i) => {
     const color = ROLE_COLORS[sec.role] || '#868e96';
-    return `<div class="section-card" style="border-left:4px solid ${color}">
+    const aidmaTag = sec.aidma_stage ? `<span class="stage-tag">${escapeHtml(sec.aidma_stage)}</span>` : '';
+    const pasonaTag = sec.pasona_stage ? `<span class="stage-tag" style="background:rgba(81,207,102,.12);color:var(--green)">${escapeHtml(sec.pasona_stage)}</span>` : '';
+    const scoreBadge = sec.section_score != null ? `<span class="score-badge">${sec.section_score}점</span>` : '';
+    const impTip = sec.improvement_suggestion ? `<div class="improvement-tip">${escapeHtml(sec.improvement_suggestion)}</div>` : '';
+    return `<div class="section-card anim-card" style="border-left:4px solid ${color};animation-delay:${i*0.08}s">
       <div class="card-head">
         <div class="order-badge" style="background:${color}">${sec.order}</div>
-        <div class="role-name" style="color:${color}">${sec.role}</div>
+        <div class="role-name" style="color:${color}">${escapeHtml(sec.role)}</div>
+        ${aidmaTag}${pasonaTag}${scoreBadge}
       </div>
-      <div class="detail"><strong>시각 구성:</strong> ${sec.image_description || '-'}</div>
-      <div class="detail"><strong>카피 요약:</strong> ${sec.copy_summary || '-'}</div>
-      <div class="detail"><strong>설득 의도:</strong> ${sec.persuasion_intent || '-'}</div>
-      <div class="detail"><strong>심리 기법:</strong> ${sec.psychology_used || '-'}</div>
+      <div class="detail"><strong>시각 구성:</strong> ${escapeHtml(sec.image_description || '-')}</div>
+      <div class="detail"><strong>카피 요약:</strong> ${escapeHtml(sec.copy_summary || '-')}</div>
+      <div class="detail"><strong>설득 의도:</strong> ${escapeHtml(sec.persuasion_intent || '-')}</div>
+      <div class="detail"><strong>심리 기법:</strong> ${escapeHtml(sec.psychology_used || '-')}</div>
+      ${impTip}
     </div>`;
   }).join('');
 
@@ -498,20 +1092,144 @@ function renderResults(data) {
 
   // Strengths / Weaknesses
   const swGrid = document.getElementById('swGrid');
+  const strengths = data.strengths || [];
+  const weaknesses = data.weaknesses || [];
+
+  function renderSwItems(items, isStrength) {
+    if (!items.length) return '<p style="color:var(--text-dim);font-size:.85rem">-</p>';
+    return items.map((item, i) => {
+      if (typeof item === 'string') {
+        return `<div class="sw-item"><div class="sw-title">${isStrength ? '\u2705' : '\u26A0\uFE0F'} ${escapeHtml(item)}</div></div>`;
+      }
+      return `<div class="sw-item" onclick="this.classList.toggle('open')">
+        <div class="sw-title">
+          ${isStrength ? '\u2705' : '\u26A0\uFE0F'} ${escapeHtml(item.title || '')}
+          <span class="sw-toggle">\u25BC</span>
+        </div>
+        <div class="sw-detail">${escapeHtml(item.detail || '')}</div>
+        <div class="sw-impact">${escapeHtml(item.impact || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
   swGrid.innerHTML = `
-    <div class="sw-box strengths"><h4>✅ 강점</h4><ul>${(data.strengths || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
-    <div class="sw-box weaknesses"><h4>⚠️ 약점</h4><ul>${(data.weaknesses || []).map(w => `<li>${w}</li>`).join('')}</ul></div>
+    <div class="sw-box"><h4>강점</h4>${renderSwItems(strengths, true)}</div>
+    <div class="sw-box"><h4>약점</h4>${renderSwItems(weaknesses, false)}</div>
   `;
 
   // Improvements
-  const improveList = document.getElementById('improveList');
-  improveList.innerHTML = (data.conversion_improvement_points || []).map(p => `<li><span>${p}</span></li>`).join('');
+  const improveWrap = document.getElementById('improveWrap');
+  const improvements = data.conversion_improvement_points || [];
+  improveWrap.innerHTML = improvements.map((item, i) => {
+    if (typeof item === 'string') {
+      return `<div class="improve-card anim-card" style="animation-delay:${i*0.06}s">
+        <div class="improve-title">${escapeHtml(item)}</div>
+      </div>`;
+    }
+    const p = (item.priority || '').replace(/^\s+/, '');
+    let pClass = 'low', pLabel = '하';
+    if (p === '상') { pClass = 'high'; pLabel = '상'; }
+    else if (p === '중') { pClass = 'mid'; pLabel = '중'; }
+    else { pLabel = p || '하'; }
 
-  // Download
+    return `<div class="improve-card priority-${pClass} anim-card" style="animation-delay:${i*0.06}s">
+      <div class="improve-head">
+        <span class="priority-badge ${pClass}">${escapeHtml(pLabel)}</span>
+        <span class="category-badge">${escapeHtml(item.category || '')}</span>
+        <span class="improve-title">${escapeHtml(item.title || '')}</span>
+      </div>
+      ${item.current_state ? `<div class="improve-body"><span class="label">현재:</span> ${escapeHtml(item.current_state)}</div>` : ''}
+      ${item.problem ? `<div class="improve-body"><span class="label">문제:</span> ${escapeHtml(item.problem)}</div>` : ''}
+      ${item.suggestion ? `<div class="improve-body"><span class="label">제안:</span> ${escapeHtml(item.suggestion)}</div>` : ''}
+      ${item.expected_effect ? `<div class="improve-effect">${escapeHtml(item.expected_effect)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Recommended Structure Timeline
+  const timelineWrap = document.getElementById('timelineWrap');
+  const recStruct = data.recommended_structure || [];
+  if (recStruct.length > 0) {
+    timelineWrap.innerHTML = recStruct.map((item, i) => {
+      const roleColor = ROLE_COLORS[item.role] || '#868e96';
+      return `<div class="timeline-item anim-card" style="animation-delay:${i*0.08}s">
+        <div class="timeline-card">
+          <div class="tl-head">
+            <span class="tl-order">#${item.order || i+1}</span>
+            <span class="tl-name">${escapeHtml(item.section_name || '')}</span>
+            <span class="tl-role-tag" style="background:${roleColor}">${escapeHtml(item.role || '')}</span>
+            ${item.aidma_stage ? `<span class="stage-tag">${escapeHtml(item.aidma_stage)}</span>` : ''}
+          </div>
+          ${item.key_elements ? `<div class="tl-body">${item.key_elements.map(e => escapeHtml(e)).join(' · ')}</div>` : ''}
+          ${item.suggested_copy ? `<div class="tl-copy">"${escapeHtml(item.suggested_copy)}"</div>` : ''}
+          ${item.design_direction ? `<div class="tl-body" style="margin-top:.25rem;font-size:.78rem;color:var(--text-dim)">${escapeHtml(item.design_direction)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    timelineWrap.innerHTML = '<p style="color:var(--text-dim);font-size:.85rem">권장 구조 데이터가 없습니다.</p>';
+  }
+
+  // Reset draft section
+  document.getElementById('draftPreview').classList.remove('show');
+  document.getElementById('draftPreview').innerHTML = '';
+  document.getElementById('draftActions').style.display = 'none';
+  document.getElementById('draftGuide').style.display = 'none';
+
+  // Download JSON
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   document.getElementById('btnDownload').href = URL.createObjectURL(blob);
 
   results.classList.add('show');
+}
+
+// ── Draft Generation ──
+document.getElementById('btnDraft').addEventListener('click', async () => {
+  if (!lastAnalysisData || !lastAnalysisData.recommended_structure) {
+    alert('분석 결과에 권장 구조(recommended_structure) 데이터가 없습니다.');
+    return;
+  }
+
+  const btn = document.getElementById('btnDraft');
+  btn.disabled = true;
+  btn.textContent = '생성 중…';
+
+  try {
+    const resp = await fetch('/generate-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recommended_structure: lastAnalysisData.recommended_structure,
+        product_name: lastAnalysisData.product_name || ''
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '초안 생성 실패');
+
+    const preview = document.getElementById('draftPreview');
+    preview.innerHTML = data.svg;
+    preview.classList.add('show');
+
+    // Download link
+    const svgBlob = new Blob([data.svg], { type: 'image/svg+xml' });
+    document.getElementById('btnDownloadSvg').href = URL.createObjectURL(svgBlob);
+    document.getElementById('draftActions').style.display = 'flex';
+    document.getElementById('draftGuide').style.display = 'block';
+
+    preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (err) {
+    alert('초안 생성 오류: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '초안 생성 (SVG 와이어프레임)';
+  }
+});
+
+// ── Utility ──
+function escapeHtml(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 </script>
 </body>

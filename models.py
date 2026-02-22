@@ -17,6 +17,7 @@ class Submission(db.Model):
     product_name = db.Column(db.String(500))
     brand_name = db.Column(db.String(500))
     category = db.Column(db.String(500))
+    overall_score = db.Column(db.Integer)
 
     def to_dict(self):
         import json
@@ -28,6 +29,7 @@ class Submission(db.Model):
             "product_name": self.product_name,
             "brand_name": self.brand_name,
             "category": self.category,
+            "overall_score": self.overall_score,
             "analysis_result": json.loads(self.analysis_result)
             if self.analysis_result
             else None,

@@ -2,7 +2,9 @@ import base64
 import gc
 import io
 import json
+import logging
 import re
+import time
 
 import anthropic
 from PIL import Image
@@ -14,6 +16,11 @@ MAX_DIMENSION = 7900
 TILE_HEIGHT = 4000
 TILE_OVERLAP = 200
 TARGET_WIDTH = 1100
+
+MAX_RETRIES = 2
+RETRY_DELAY = 3  # seconds
+
+logger = logging.getLogger(__name__)
 
 
 def _save_jpeg(img: Image.Image, max_bytes: int = MAX_TILE_BYTES) -> bytes:
@@ -82,6 +89,40 @@ def _process_single_image(image_bytes: bytes) -> list[dict]:
     return content_blocks
 
 
+def _call_api_with_retry(client, content: list) -> str:
+    """API 호출 + 서버 에러 시 최대 MAX_RETRIES회 재시도."""
+    last_error = None
+    for attempt in range(1 + MAX_RETRIES):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-5-20250929",
+                max_tokens=32000,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": content}],
+            )
+            return response.content[0].text
+        except anthropic.APIStatusError as e:
+            last_error = e
+            if e.status_code >= 500 and attempt < MAX_RETRIES:
+                logger.warning(
+                    f"API 서버 에러 (HTTP {e.status_code}), "
+                    f"{RETRY_DELAY}초 후 재시도 ({attempt + 1}/{MAX_RETRIES})"
+                )
+                time.sleep(RETRY_DELAY)
+            else:
+                raise
+        except anthropic.APIConnectionError as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                logger.warning(
+                    f"API 연결 에러, {RETRY_DELAY}초 후 재시도 ({attempt + 1}/{MAX_RETRIES})"
+                )
+                time.sleep(RETRY_DELAY)
+            else:
+                raise
+    raise last_error
+
+
 def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dict:
     """상세페이지 이미지를 1회 호출로 분석."""
     client = anthropic.Anthropic(api_key=api_key)
@@ -96,15 +137,8 @@ def analyze_page(image_bytes_list: list[tuple[bytes, str]], api_key: str) -> dic
 
     content.append({"type": "text", "text": USER_PROMPT})
 
-    response = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
-        max_tokens=16384,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}],
-    )
-
-    raw_text = response.content[0].text
-    del content, response
+    raw_text = _call_api_with_retry(client, content)
+    del content
     gc.collect()
 
     return _extract_json(raw_text)

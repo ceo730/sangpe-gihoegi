@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>제출 #{{ submission.id }} — 상페기획기 관리자</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
   :root {
     --bg: #0f1117;
@@ -17,6 +18,10 @@
     --green: #51cf66;
     --red: #ff6b6b;
     --orange: #ffa94d;
+    --blue: #339af0;
+    --purple: #845ef7;
+    --teal: #20c997;
+    --pink: #f06595;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -56,6 +61,46 @@
     background: var(--accent); border-radius: 2px;
   }
 
+  /* Score Dashboard */
+  .score-overview {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .score-center {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .score-big {
+    font-size: 2.5rem; font-weight: 800; line-height: 1;
+  }
+  .score-grade {
+    margin-top: .3rem;
+    padding: .15rem .6rem;
+    border-radius: 6px;
+    font-size: .85rem;
+    font-weight: 700;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .score-bars { display: flex; flex-direction: column; gap: .5rem; justify-content: center; }
+  .score-bar-row {
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .score-bar-label {
+    width: 50px; font-size: .78rem; color: var(--text-dim); text-align: right;
+  }
+  .score-bar-track {
+    flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 4px; }
+  .score-bar-val { width: 30px; font-size: .78rem; font-weight: 700; }
+  @media (max-width: 600px) { .score-overview { grid-template-columns: 1fr; } }
+
   /* Metric cards */
   .metric-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .75rem;
@@ -67,20 +112,51 @@
   .metric-card .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing:.04em; margin-bottom:.25rem; }
   .metric-card .value { font-size: 1rem; font-weight: 600; }
 
+  /* Framework */
+  .framework-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
+  }
+  @media (max-width: 700px) { .framework-grid { grid-template-columns: 1fr; } }
+  .framework-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem;
+  }
+  .framework-card h4 { font-size: .95rem; font-weight: 700; margin-bottom: .5rem; }
+  .fw-item {
+    display: flex; gap: .5rem; padding: .3rem 0; font-size: .85rem;
+    color: var(--text-dim); border-bottom: 1px solid rgba(46,51,69,.5);
+  }
+  .fw-item:last-child { border-bottom: none; }
+  .fw-stage { width: 60px; font-weight: 600; color: var(--text); flex-shrink: 0; font-size: .8rem; }
+
   /* Section cards */
   .section-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: .75rem;
   }
-  .section-card .card-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; }
+  .section-card .card-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; flex-wrap: wrap; }
   .section-card .order-badge {
     width: 28px; height: 28px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: .8rem; font-weight: 700; color: #fff; background: var(--accent);
   }
   .section-card .role-name { font-weight: 700; }
+  .section-card .stage-tag {
+    font-size: .65rem; padding: .1rem .4rem; border-radius: 4px;
+    font-weight: 600; background: rgba(108,99,255,.12); color: var(--accent);
+  }
+  .section-card .score-badge {
+    margin-left: auto; font-size: .75rem; font-weight: 700;
+    padding: .1rem .4rem; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
   .section-card .detail { font-size: .88rem; color: var(--text-dim); margin-top: .3rem; }
   .section-card .detail strong { color: var(--text); }
+  .section-card .imp-tip {
+    margin-top: .5rem; padding: .4rem .6rem;
+    background: rgba(108,99,255,.06); border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0; font-size: .82rem; color: var(--accent);
+  }
 
   /* Summary */
   .summary-box {
@@ -97,21 +173,44 @@
     border-radius: 12px; padding: 1.25rem;
   }
   .sw-box h4 { margin-bottom: .5rem; font-size: .95rem; }
-  .sw-box ul { list-style: none; }
-  .sw-box ul li { padding: .3rem 0; font-size: .9rem; color: var(--text-dim); }
+  .sw-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: .6rem .75rem; margin-bottom: .4rem;
+  }
+  .sw-item-title { font-size: .88rem; font-weight: 600; }
+  .sw-item-detail { font-size: .82rem; color: var(--text-dim); margin-top: .2rem; }
+  .sw-item-impact { font-size: .78rem; color: var(--orange); margin-top: .15rem; }
 
   /* Improvements */
-  .improve-list { list-style: none; counter-reset: imp; }
-  .improve-list li {
+  .improve-card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: .75rem 1.25rem; margin-bottom: .5rem;
-    font-size: .9rem; display: flex; align-items: flex-start; gap: .75rem;
+    border-radius: 10px; padding: .85rem 1.25rem; margin-bottom: .5rem;
+    border-left: 4px solid var(--border);
   }
-  .improve-list li::before {
-    counter-increment: imp; content: counter(imp);
-    width: 24px; height: 24px; background: var(--accent); color: #fff;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  .improve-card.p-high { border-left-color: var(--red); }
+  .improve-card.p-mid { border-left-color: var(--orange); }
+  .improve-card.p-low { border-left-color: var(--blue); }
+  .improve-head {
+    display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .3rem;
+  }
+  .p-badge {
+    font-size: .65rem; padding: .1rem .4rem; border-radius: 4px;
+    font-weight: 700; color: #fff;
+  }
+  .p-badge.high { background: var(--red); }
+  .p-badge.mid { background: var(--orange); }
+  .p-badge.low { background: var(--blue); }
+  .cat-badge {
+    font-size: .65rem; padding: .1rem .4rem; border-radius: 4px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .improve-title { font-weight: 700; font-size: .9rem; }
+  .improve-detail { font-size: .82rem; color: var(--text-dim); margin-top: .15rem; }
+  .improve-detail .lbl { color: var(--text); font-weight: 600; }
+  .improve-effect {
+    margin-top: .3rem; padding: .25rem .5rem;
+    background: rgba(81,207,102,.08); border-radius: 6px;
+    font-size: .78rem; color: var(--green);
   }
 
   /* JSON block */
@@ -122,6 +221,8 @@
     overflow-x: auto; max-height: 500px; overflow-y: auto;
     white-space: pre-wrap; word-break: break-all; color: var(--text-dim);
   }
+
+  /* ROLE_COLORS inline */
 </style>
 </head>
 <body>
@@ -139,9 +240,36 @@
     <div class="meta-tag"><div class="label">이미지 수</div>{{ submission.image_count }}</div>
     <div class="meta-tag"><div class="label">브랜드</div>{{ submission.brand_name or '-' }}</div>
     <div class="meta-tag"><div class="label">카테고리</div>{{ submission.category or '-' }}</div>
+    {% if submission.overall_score is not none %}
+    <div class="meta-tag"><div class="label">종합 점수</div>{{ submission.overall_score }}점</div>
+    {% endif %}
   </div>
 
   {% if analysis %}
+
+  <!-- Score Overview -->
+  {% if analysis.get('scores') %}
+  <div class="section-title">종합 점수</div>
+  <div class="score-overview">
+    <div class="score-center">
+      <div class="score-big">{{ analysis.get('overall_score', '-') }}</div>
+      <div class="score-grade">{{ analysis.get('grade', '-') }}</div>
+    </div>
+    <div class="score-bars">
+      {% set score_map = {'visual': ('시각', '#845ef7'), 'copy': ('카피', '#339af0'), 'structure': ('구조', '#51cf66'), 'trust': ('신뢰', '#20c997'), 'mobile': ('모바일', '#ffa94d'), 'conversion': ('전환', '#f06595')} %}
+      {% for key, (label, color) in score_map.items() %}
+      <div class="score-bar-row">
+        <div class="score-bar-label">{{ label }}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" style="width:{{ analysis['scores'].get(key, 0) }}%;background:{{ color }}"></div>
+        </div>
+        <div class="score-bar-val" style="color:{{ color }}">{{ analysis['scores'].get(key, 0) }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Metrics -->
   <div class="section-title">기본 정보</div>
   <div class="metric-grid">
@@ -160,19 +288,52 @@
   {% endfor %}
   {% endif %}
 
+  <!-- Framework Analysis -->
+  {% if analysis.get('framework_analysis') %}
+  <div class="section-title">설득 프레임워크 분석</div>
+  <div class="framework-grid">
+    {% if analysis['framework_analysis'].get('aidma') %}
+    <div class="framework-card">
+      <h4>AIDMA</h4>
+      {% set aidma = analysis['framework_analysis']['aidma'] %}
+      {% for stage, label in [('attention','주의'), ('interest','관심'), ('desire','욕구'), ('memory','기억'), ('action','행동')] %}
+      <div class="fw-item"><div class="fw-stage">{{ label }}</div><div>{{ aidma.get(stage, '-') }}</div></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if analysis['framework_analysis'].get('pasona') %}
+    <div class="framework-card">
+      <h4>PASONA</h4>
+      {% set pasona = analysis['framework_analysis']['pasona'] %}
+      {% for stage, label in [('problem','문제'), ('affinity','공감'), ('solution','해결'), ('offer','제안'), ('narrowing','한정'), ('action','행동')] %}
+      <div class="fw-item"><div class="fw-stage">{{ label }}</div><div>{{ pasona.get(stage, '-') }}</div></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- Sections -->
   {% if analysis.get('sections') %}
   <div class="section-title">섹션별 설득 구조</div>
+  {% set role_colors = {'감정공감': '#ff6b6b', '문제제기': '#ffa94d', '해결제시': '#51cf66', '차별화': '#339af0', '증거': '#845ef7', '신뢰': '#20c997', 'CTA': '#f06595'} %}
   {% for sec in analysis['sections'] %}
-  <div class="section-card">
+  {% set color = role_colors.get(sec.get('role', ''), '#868e96') %}
+  <div class="section-card" style="border-left:4px solid {{ color }}">
     <div class="card-head">
-      <div class="order-badge">{{ sec.get('order', loop.index) }}</div>
-      <div class="role-name">{{ sec.get('role', '-') }}</div>
+      <div class="order-badge" style="background:{{ color }}">{{ sec.get('order', loop.index) }}</div>
+      <div class="role-name" style="color:{{ color }}">{{ sec.get('role', '-') }}</div>
+      {% if sec.get('aidma_stage') %}<span class="stage-tag">{{ sec['aidma_stage'] }}</span>{% endif %}
+      {% if sec.get('pasona_stage') %}<span class="stage-tag" style="background:rgba(81,207,102,.12);color:var(--green)">{{ sec['pasona_stage'] }}</span>{% endif %}
+      {% if sec.get('section_score') is not none %}<span class="score-badge">{{ sec['section_score'] }}점</span>{% endif %}
     </div>
     <div class="detail"><strong>시각 구성:</strong> {{ sec.get('image_description', '-') }}</div>
     <div class="detail"><strong>카피 요약:</strong> {{ sec.get('copy_summary', '-') }}</div>
     <div class="detail"><strong>설득 의도:</strong> {{ sec.get('persuasion_intent', '-') }}</div>
     <div class="detail"><strong>심리 기법:</strong> {{ sec.get('psychology_used', '-') }}</div>
+    {% if sec.get('improvement_suggestion') %}
+    <div class="imp-tip">{{ sec['improvement_suggestion'] }}</div>
+    {% endif %}
   </div>
   {% endfor %}
   {% endif %}
@@ -189,11 +350,31 @@
   <div class="sw-grid">
     <div class="sw-box">
       <h4>강점</h4>
-      <ul>{% for s in analysis.get('strengths', []) %}<li>{{ s }}</li>{% endfor %}</ul>
+      {% for s in analysis.get('strengths', []) %}
+      <div class="sw-item">
+        {% if s is mapping %}
+        <div class="sw-item-title">{{ s.get('title', '') }}</div>
+        {% if s.get('detail') %}<div class="sw-item-detail">{{ s['detail'] }}</div>{% endif %}
+        {% if s.get('impact') %}<div class="sw-item-impact">{{ s['impact'] }}</div>{% endif %}
+        {% else %}
+        <div class="sw-item-title">{{ s }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
     <div class="sw-box">
       <h4>약점</h4>
-      <ul>{% for w in analysis.get('weaknesses', []) %}<li>{{ w }}</li>{% endfor %}</ul>
+      {% for w in analysis.get('weaknesses', []) %}
+      <div class="sw-item">
+        {% if w is mapping %}
+        <div class="sw-item-title">{{ w.get('title', '') }}</div>
+        {% if w.get('detail') %}<div class="sw-item-detail">{{ w['detail'] }}</div>{% endif %}
+        {% if w.get('impact') %}<div class="sw-item-impact">{{ w['impact'] }}</div>{% endif %}
+        {% else %}
+        <div class="sw-item-title">{{ w }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
   </div>
   {% endif %}
@@ -201,11 +382,26 @@
   <!-- Improvements -->
   {% if analysis.get('conversion_improvement_points') %}
   <div class="section-title">전환율 개선 포인트</div>
-  <ol class="improve-list">
-    {% for p in analysis['conversion_improvement_points'] %}
-    <li><span>{{ p }}</span></li>
-    {% endfor %}
-  </ol>
+  {% for item in analysis['conversion_improvement_points'] %}
+  {% if item is mapping %}
+  {% set p = item.get('priority', '하') %}
+  <div class="improve-card {% if p == '상' %}p-high{% elif p == '중' %}p-mid{% else %}p-low{% endif %}">
+    <div class="improve-head">
+      <span class="p-badge {% if p == '상' %}high{% elif p == '중' %}mid{% else %}low{% endif %}">{{ p }}</span>
+      {% if item.get('category') %}<span class="cat-badge">{{ item['category'] }}</span>{% endif %}
+      <span class="improve-title">{{ item.get('title', '') }}</span>
+    </div>
+    {% if item.get('current_state') %}<div class="improve-detail"><span class="lbl">현재:</span> {{ item['current_state'] }}</div>{% endif %}
+    {% if item.get('problem') %}<div class="improve-detail"><span class="lbl">문제:</span> {{ item['problem'] }}</div>{% endif %}
+    {% if item.get('suggestion') %}<div class="improve-detail"><span class="lbl">제안:</span> {{ item['suggestion'] }}</div>{% endif %}
+    {% if item.get('expected_effect') %}<div class="improve-effect">{{ item['expected_effect'] }}</div>{% endif %}
+  </div>
+  {% else %}
+  <div class="improve-card">
+    <div class="improve-title">{{ item }}</div>
+  </div>
+  {% endif %}
+  {% endfor %}
   {% endif %}
 
   <!-- Raw JSON -->

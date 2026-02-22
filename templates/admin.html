@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>상페기획기 — 관리자</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
   :root {
     --bg: #0f1117;
@@ -12,6 +13,10 @@
     --text: #e4e6ef;
     --text-dim: #8b8fa3;
     --accent: #6c63ff;
+    --green: #51cf66;
+    --orange: #ffa94d;
+    --red: #ff6b6b;
+    --blue: #339af0;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -33,7 +38,7 @@
   }
   .header-actions a:hover { border-color: var(--accent); color: var(--text); }
 
-  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
 
   .stats {
     display: flex; gap: 1rem; margin-bottom: 2rem;
@@ -54,6 +59,20 @@
   tr:hover td { background: rgba(108,99,255,.04); }
   td a { color: var(--accent); text-decoration: none; }
   td a:hover { text-decoration: underline; }
+
+  .score-cell {
+    font-weight: 700;
+    font-size: .85rem;
+  }
+  .score-cell .grade {
+    display: inline-block;
+    padding: .1rem .4rem;
+    border-radius: 4px;
+    font-size: .7rem;
+    font-weight: 700;
+    margin-left: .3rem;
+    color: #fff;
+  }
 
   .pagination {
     display: flex; justify-content: center; gap: .5rem; margin-top: 2rem;
@@ -96,6 +115,7 @@
         <th>상품명</th>
         <th>브랜드</th>
         <th>카테고리</th>
+        <th>점수</th>
         <th>이미지 수</th>
       </tr>
     </thead>
@@ -107,6 +127,28 @@
         <td>{{ s.product_name or '-' }}</td>
         <td>{{ s.brand_name or '-' }}</td>
         <td>{{ s.category or '-' }}</td>
+        <td class="score-cell">
+          {% if s.overall_score is not none %}
+            {{ s.overall_score }}
+            {% if s.overall_score >= 90 %}
+              <span class="grade" style="background:#51cf66">A+</span>
+            {% elif s.overall_score >= 80 %}
+              <span class="grade" style="background:#51cf66">A</span>
+            {% elif s.overall_score >= 70 %}
+              <span class="grade" style="background:#339af0">B+</span>
+            {% elif s.overall_score >= 60 %}
+              <span class="grade" style="background:#339af0">B</span>
+            {% elif s.overall_score >= 50 %}
+              <span class="grade" style="background:#ffa94d">C</span>
+            {% elif s.overall_score >= 40 %}
+              <span class="grade" style="background:#ff6b6b">D</span>
+            {% else %}
+              <span class="grade" style="background:#ff6b6b">F</span>
+            {% endif %}
+          {% else %}
+            -
+          {% endif %}
+        </td>
         <td>{{ s.image_count }}</td>
       </tr>
       {% endfor %}
